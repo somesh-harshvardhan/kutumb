@@ -5,7 +5,7 @@ In the project directory, you can run:
 ## Installation
 
 1. Clone the repository
-   git clone <https://github.com/somesh-harshvardhan/kutumb>
+   git clone <https://github.com/somesh-harshvardhan/kutumb.git>
 
 2. Go to App
    cd kutumb
