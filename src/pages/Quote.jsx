@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { getQuotesList } from "../utils/api";
 import { routes } from "../utils/routes";
+import useInfiniteScroll from "../hooks/useInfiniteScroll";
 
 const QuotePage = () => {
   const [quotes, setQuotes] = useState([]);
-  const [qoutesLeft, setQoutesLeft] = useState(true);
   const navigate = useNavigate();
   const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const ref = useRef(null);
+  const OFFSET = 20;
 
   const fetchQuotes = async () => {
-    if (!qoutesLeft) return;
-    const response = await getQuotesList(5, offset);
+    if (!hasMore) return;
+    const response = await getQuotesList(OFFSET, offset);
     const newQuotes = response?.data;
-    if (newQuotes.length === 0) setQoutesLeft(false);
+    if (newQuotes.length === 0) setHasMore(false);
     setQuotes((prev) => {
       //checking if same data it there then no need to re render
       const prevString = JSON.stringify(prev);
@@ -24,25 +27,19 @@ const QuotePage = () => {
         return prev;
       }
     });
-    setOffset((prev) => prev + 5);
+    setOffset((prev) => prev + OFFSET);
   };
-
-  useEffect(() => {
-    fetchQuotes();
-    // eslint-disable-next-line
-  }, []);
+  const { loaderRef, isFetching } = useInfiniteScroll(fetchQuotes, hasMore);
 
   return (
     <div className="p-4 bg-gray-100 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Quotes</h1>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {!quotes.length && (
-          <p>
-            No Quotes Available. Click on the '+ Create' to create a new one
-          </p>
-        )}
+      <div
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4"
+        ref={ref}
+      >
         {quotes.map((quote, index) => (
           <div
             key={index}
@@ -69,15 +66,19 @@ const QuotePage = () => {
           </div>
         ))}
       </div>
-      {qoutesLeft && quotes?.length !== 0 && (
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={fetchQuotes}
-            className="bg-[#f9ae39] text-white py-2 px-4 rounded-lg hover:bg-[#d8902f]"
-          >
-            Load More
-          </button>
-        </div>
+      {isFetching && (
+        <p className=" my-6 text-center text-xl font-semibold">Loading...</p>
+      )}
+      {hasMore && (
+        <div
+          ref={loaderRef}
+          style={{ height: "20px", background: "transparent" }}
+        />
+      )}
+      {!hasMore && (
+        <p className=" my-6 text-center text-xl font-semibold">
+          No more items to load
+        </p>
       )}
       <button
         onClick={() => navigate(routes.createQuote)}
